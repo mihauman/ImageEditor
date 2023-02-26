@@ -1,70 +1,239 @@
-# Getting Started with Create React App
+Smart contract called: ImageEditor
+ ```
+// SPDX-License-Identifier: MIT
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+pragma solidity ^0.8.0;
 
-## Available Scripts
+contract ImageEditor {
+    struct ImageData {
+        uint rightTurns;
+        uint leftTurns;
+        uint verticalFlips;
+        uint horizontalFlips;
+        uint[3][3] currentImage;
+    }
 
-In the project directory, you can run:
+    mapping (address => ImageData) private userImageData;
 
-### `npm start`
+    function turnRight() public {
+        ImageData storage data = userImageData[msg.sender];
+        uint[3][3] memory newImage;
+        for (uint i = 0; i < 3; i++) {
+            for (uint j = 0; j < 3; j++) {
+                newImage[i][j] = data.currentImage[3 - j - 1][i];
+            }
+        }
+        data.currentImage = newImage;
+        data.rightTurns++;
+    }
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+    function turnLeft() public {
+        ImageData storage data = userImageData[msg.sender];
+        uint[3][3] memory newImage;
+        for (uint i = 0; i < 3; i++) {
+            for (uint j = 0; j < 3; j++) {
+                newImage[i][j] = data.currentImage[j][3 - i - 1];
+            }
+        }
+        data.currentImage = newImage;
+        data.leftTurns++;
+    }
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+    function flipVertically() public {
+        ImageData storage data = userImageData[msg.sender];
+        uint[3][3] memory newImage;
+        for (uint i = 0; i < 3; i++) {
+            for (uint j = 0; j < 3; j++) {
+                newImage[i][j] = data.currentImage[3 - i - 1][j];
+            }
+        }
+        data.currentImage = newImage;
+        data.verticalFlips++;
+    }
 
-### `npm test`
+    function flipHorizontally() public {
+        ImageData storage data = userImageData[msg.sender];
+        uint[3][3] memory newImage;
+        for (uint i = 0; i < 3; i++) {
+            for (uint j = 0; j < 3; j++) {
+                newImage[i][j] = data.currentImage[i][3 - j - 1];
+            }
+        }
+        data.currentImage = newImage;
+        data.horizontalFlips++;
+    }
+}
+ ```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Basic frontend for ImageEditor:
+ ```
+import React, { useState, useEffect } from "react";
+import Web3 from "web3";
+// import ImageEditor from "./contracts/ImageEditor.json";
+import fleekStorage from "@fleekhq/fleek-storage-js";
 
-### `npm run build`
+function ImageEditor() {
+  const [loading, setLoading] = useState(false);
+  const [account, setAccount] = useState("");
+  const [rightTurns, setRightTurns] = useState(0);
+  const [leftTurns, setLeftTurns] = useState(0);
+  const [verticalFlips, setVerticalFlips] = useState(0);
+  const [horizontalFlips, setHorizontalFlips] = useState(0);
+  const [currentImage, setCurrentImage] = useState([]);
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+  const ImageEditorContractAddress = "CONTRACT_ADDRESS_HERE";
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+  useEffect(() => {
+    loadBlockchainData();
+  }, []);
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+  async function loadBlockchainData() {
+    if (window.ethereum) {
+      window.web3 = new Web3(window.ethereum);
+      await window.ethereum.enable();
+    } else if (window.web3) {
+      window.web3 = new Web3(window.web3.currentProvider);
+    } else {
+      window.alert(
+        "Non-Ethereum browser detected. You should consider trying MetaMask!"
+      );
+    }
 
-### `npm run eject`
+    const web3 = window.web3;
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+    const accounts = await web3.eth.getAccounts();
+    setAccount(accounts[0]);
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+    const contract = new web3.eth.Contract(
+      ImageEditor.abi,
+      ImageEditorContractAddress
+    );
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+    const imageData = await contract.methods.userImageData(accounts[0]).call();
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+    setRightTurns(imageData.rightTurns);
+    setLeftTurns(imageData.leftTurns);
+    setVerticalFlips(imageData.verticalFlips);
+    setHorizontalFlips(imageData.horizontalFlips);
+    setCurrentImage(imageData.currentImage);
+  }
 
-## Learn More
+  const handleTurnRight = async () => {
+    setLoading(true);
+    try {
+      const contract = new Web3.eth.Contract(
+        ImageEditor.abi,
+        ImageEditorContractAddress
+      );
+      await contract.methods.turnRight().send({ from: account });
+      setLoading(false);
+      loadBlockchainData();
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+    }
+  };
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+  const handleTurnLeft = async () => {
+    setLoading(true);
+    try {
+      const contract = new Web3.eth.Contract(
+        ImageEditor.abi,
+        ImageEditorContractAddress
+      );
+      await contract.methods.turnLeft().send({ from: account });
+      setLoading(false);
+      loadBlockchainData();
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+    }
+  };
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+  const handleFlipHorizontally = async () => {
+    setLoading(true);
+    try {
+      const contract = new Web3.eth.Contract(
+        ImageEditor.abi,
+        ImageEditorContractAddress
+      );
+      await contract.methods.flipHorizontally().send({ from: account });
+      setLoading(false);
+      loadBlockchainData();
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+    }
+  };
+  const handleFlipVertically = async () => {
+    setLoading(true);
+    try {
+      const contract = new Web3.eth.Contract(
+        ImageEditor.abi,
+        ImageEditorContractAddress
+      );
+      await contract.methods.flipVertically().send({ from: account });
+      setLoading(false);
+      loadBlockchainData();
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+    }
+  };
 
-### Code Splitting
+  const handleSaveImage = async () => {
+    setLoading(true);
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+    try {
+      const uploadedImage = await fleekStorage.upload({
+        apiKey: "API_KEY_HERE",
+        apiSecret: "API_SECRET_HERE",
+        key: currentImage[0].name,
+        data: currentImage[0],
+      });
 
-### Analyzing the Bundle Size
+      const contract = new Web3.eth.Contract(
+        ImageEditor.abi,
+        ImageEditorContractAddress
+      );
+      await contract.methods
+        .saveImage(uploadedImage.hash)
+        .send({ from: account });
+      setLoading(false);
+      loadBlockchainData();
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+    }
+  };
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+  const handleImageChange = (e) => {
+    setCurrentImage(e.target.files);
+  };
 
-### Making a Progressive Web App
+  return (
+    <div>
+      <h1>Image Editor</h1>
+      <p>Account: {account}</p>
+      <p>Right turns: {rightTurns}</p>
+      <p>Left turns: {leftTurns}</p>
+      <p>Vertical flips: {verticalFlips}</p>
+      <p>Horizontal flips: {horizontalFlips}</p>
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+      <input type="file" accept="image/*" onChange={handleImageChange} />
 
-### Advanced Configuration
+      <div>
+        <button onClick={handleTurnLeft}>Turn Left</button>
+        <button onClick={handleTurnRight}>Turn Right</button>
+        <button onClick={handleFlipVertically}>Flip Vertically</button>
+        <button onClick={handleFlipHorizontally}>Flip Horizontally</button>
+        <button onClick={handleSaveImage}>Save Image</button>
+      </div>
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+      {loading && <p>Loading...</p>}
+    </div>
+  );
+}
 
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+export default ImageEditor;
+ ```
