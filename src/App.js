@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Web3 from "web3";
-import ImageEditor from "./contracts/ImageEditor.json";
+// import ImageEditor from "./contracts/ImageEditor.json";
 import fleekStorage from "@fleekhq/fleek-storage-js";
 
 function ImageEditor() {
@@ -25,7 +25,9 @@ function ImageEditor() {
     } else if (window.web3) {
       window.web3 = new Web3(window.web3.currentProvider);
     } else {
-      window.alert("Non-Ethereum browser detected. You should consider trying MetaMask!");
+      window.alert(
+        "Non-Ethereum browser detected. You should consider trying MetaMask!"
+      );
     }
 
     const web3 = window.web3;
@@ -33,7 +35,10 @@ function ImageEditor() {
     const accounts = await web3.eth.getAccounts();
     setAccount(accounts[0]);
 
-    const contract = new web3.eth.Contract(ImageEditor.abi, ImageEditorContractAddress);
+    const contract = new web3.eth.Contract(
+      ImageEditor.abi,
+      ImageEditorContractAddress
+    );
 
     const imageData = await contract.methods.userImageData(accounts[0]).call();
 
@@ -47,7 +52,10 @@ function ImageEditor() {
   const handleTurnRight = async () => {
     setLoading(true);
     try {
-      const contract = new web3.eth.Contract(ImageEditor.abi, ImageEditorContractAddress);
+      const contract = new Web3.eth.Contract(
+        ImageEditor.abi,
+        ImageEditorContractAddress
+      );
       await contract.methods.turnRight().send({ from: account });
       setLoading(false);
       loadBlockchainData();
@@ -60,7 +68,10 @@ function ImageEditor() {
   const handleTurnLeft = async () => {
     setLoading(true);
     try {
-      const contract = new web3.eth.Contract(ImageEditor.abi, ImageEditorContractAddress);
+      const contract = new Web3.eth.Contract(
+        ImageEditor.abi,
+        ImageEditorContractAddress
+      );
       await contract.methods.turnLeft().send({ from: account });
       setLoading(false);
       loadBlockchainData();
@@ -73,7 +84,10 @@ function ImageEditor() {
   const handleFlipHorizontally = async () => {
     setLoading(true);
     try {
-      const contract = new web3.eth.Contract(ImageEditor.abi, ImageEditorContractAddress);
+      const contract = new Web3.eth.Contract(
+        ImageEditor.abi,
+        ImageEditorContractAddress
+      );
       await contract.methods.flipHorizontally().send({ from: account });
       setLoading(false);
       loadBlockchainData();
@@ -85,7 +99,10 @@ function ImageEditor() {
   const handleFlipVertically = async () => {
     setLoading(true);
     try {
-      const contract = new web3.eth.Contract(ImageEditor.abi, ImageEditorContractAddress);
+      const contract = new Web3.eth.Contract(
+        ImageEditor.abi,
+        ImageEditorContractAddress
+      );
       await contract.methods.flipVertically().send({ from: account });
       setLoading(false);
       loadBlockchainData();
@@ -106,8 +123,13 @@ function ImageEditor() {
         data: currentImage[0],
       });
 
-      const contract = new web3.eth.Contract(ImageEditor.abi, ImageEditorContractAddress);
-      await contract.methods.saveImage(uploadedImage.hash).send({ from: account });
+      const contract = new Web3.eth.Contract(
+        ImageEditor.abi,
+        ImageEditorContractAddress
+      );
+      await contract.methods
+        .saveImage(uploadedImage.hash)
+        .send({ from: account });
       setLoading(false);
       loadBlockchainData();
     } catch (error) {
